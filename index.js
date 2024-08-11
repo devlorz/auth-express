@@ -38,7 +38,41 @@ const initMySQL = async () => {
   });
 };
 
-app.listen(post, async () => {
+const SALT = 16;
+
+app.post("/api/register", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const [rows] = await conn.query(
+      "SELECT * FROM users WHERE email = ?",
+      email
+    );
+    if (rows.length) {
+      return res.status(400).send({ message: "Email is already registered" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, SALT);
+    const userData = {
+      email,
+      password: passwordHash,
+    };
+
+    const [result] = await conn.query("INSERT INTO users SET ?", userData);
+    res.json({
+      message: "insert ok",
+      result,
+    });
+  } catch (err) {
+    console.log({ err });
+    res.json({
+      message: "insert error",
+      error: err,
+    });
+  }
+});
+
+app.listen(port, async () => {
   await initMySQL();
   console.log("Server started at port 8000");
 });
