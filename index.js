@@ -94,8 +94,14 @@ app.post("/api/login", async (req, res) => {
     const token = jwt.sign({ email, role: "admin" }, secret, {
       expiresIn: "1h",
     });
+    res.cookie("token", token, {
+      maxAge: 300000,
+      secure: true,
+      httpOnly: true,
+      sameSite: "none",
+    });
 
-    res.send({ message: "Login successful", token });
+    res.send({ message: "Login successful" });
   } catch (err) {
     console.log({ err });
     res.status(401).send({
@@ -106,11 +112,12 @@ app.post("/api/login", async (req, res) => {
 
 app.get("/api/users", async (req, res) => {
   try {
-    const authHeader = req.headers["authorization"];
-    let authToken = "";
-    if (authHeader) {
-      authToken = authHeader.split(" ")[1];
-    }
+    // const authHeader = req.headers["authorization"];
+    const authToken = req.cookies.token;
+    // let authToken = "";
+    // if (authHeader) {
+    //   authToken = authHeader.split(" ")[1];
+    // }
     const user = jwt.verify(authToken, secret);
     const [checkResults] = await conn.query(
       "SELECT * from users WHERE email = ?",
