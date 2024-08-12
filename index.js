@@ -75,6 +75,8 @@ app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log({ email, password });
+
     const [result] = await conn.query(
       "SELECT * from users WHERE email = ?",
       email
@@ -89,11 +91,43 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).send({ message: "Invalid email or password" });
     }
 
-    res.send({ message: "Login successful" });
+    const token = jwt.sign({ email, role: "admin" }, secret, {
+      expiresIn: "1h",
+    });
+
+    res.send({ message: "Login successful", token });
   } catch (err) {
     console.log({ err });
     res.status(401).send({
       message: "Login failed",
+    });
+  }
+});
+
+app.get("/api/users", async (req, res) => {
+  try {
+    const authHeader = req.headers["authorization"];
+    let authToken = "";
+    if (authHeader) {
+      authToken = authHeader.split(" ")[1];
+    }
+    const user = jwt.verify(authToken, secret);
+    const [checkResults] = await conn.query(
+      "SELECT * from users WHERE email = ?",
+      user.email
+    );
+    if (!checkResults[0]) {
+      throw { message: "User not found" };
+    }
+
+    const [results] = await conn.query("SELECT * from users ");
+    res.json({
+      results,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(403).json({
+      message: "authorization fail",
     });
   }
 });
