@@ -67,29 +67,35 @@ app.post("/api/register", async (req, res) => {
     console.log({ err });
     res.json({
       message: "insert error",
-      error: err,
     });
   }
 });
 
 app.post("/api/login", async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const [result] = await conn.query(
-    "SELECT * from users WHERE email = ?",
-    email
-  );
-  if (!result.length) {
-    return res.status(400).send({ message: "Invalid email or password" });
+    const [result] = await conn.query(
+      "SELECT * from users WHERE email = ?",
+      email
+    );
+    if (!result.length) {
+      return res.status(400).send({ message: "Invalid email or password" });
+    }
+
+    const user = result[0];
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(400).send({ message: "Invalid email or password" });
+    }
+
+    res.send({ message: "Login successful" });
+  } catch (err) {
+    console.log({ err });
+    res.status(401).send({
+      message: "Login failed",
+    });
   }
-
-  const user = result[0];
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) {
-    return res.status(400).send({ message: "Invalid email or password" });
-  }
-
-  res.send({ message: "Login successful" });
 });
 
 app.listen(port, async () => {
