@@ -91,15 +91,20 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).send({ message: "Invalid email or password" });
     }
 
-    const token = jwt.sign({ email, role: "admin" }, secret, {
-      expiresIn: "1h",
-    });
-    res.cookie("token", token, {
-      maxAge: 300000,
-      secure: true,
-      httpOnly: true,
-      sameSite: "none",
-    });
+    // const token = jwt.sign({ email, role: "admin" }, secret, {
+    //   expiresIn: "1h",
+    // });
+    // res.cookie("token", token, {
+    //   maxAge: 300000,
+    //   secure: true,
+    //   httpOnly: true,
+    //   sameSite: "none",
+    // });
+
+    req.session.userId = user.id;
+    req.session.user = user;
+
+    console.log(req.session.id);
 
     res.send({ message: "Login successful" });
   } catch (err) {
@@ -113,19 +118,24 @@ app.post("/api/login", async (req, res) => {
 app.get("/api/users", async (req, res) => {
   try {
     // const authHeader = req.headers["authorization"];
-    const authToken = req.cookies.token;
+    // const authToken = req.cookies.token;
     // let authToken = "";
     // if (authHeader) {
     //   authToken = authHeader.split(" ")[1];
     // }
-    const user = jwt.verify(authToken, secret);
-    const [checkResults] = await conn.query(
-      "SELECT * from users WHERE email = ?",
-      user.email
-    );
-    if (!checkResults[0]) {
-      throw { message: "User not found" };
+    // const user = jwt.verify(authToken, secret);
+
+    if (!req.session.userId) {
+      throw { message: "Auth fail" };
     }
+    console.log(req.session);
+    // const [checkResults] = await conn.query(
+    //   "SELECT * from users WHERE email = ?",
+    //   user.email
+    // );
+    // if (!checkResults[0]) {
+    //   throw { message: "User not found" };
+    // }
 
     const [results] = await conn.query("SELECT * from users ");
     res.json({
